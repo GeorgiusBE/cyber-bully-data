@@ -6,14 +6,10 @@ USER_NAME = $(shell whoami)
 USER_ID = $(shell id -u)
 HOST_NAME = $(shell hostname)
 
-ifeq (, $(shell which docker-compose))
-	DOCKER_COMPOSE_COMMAND = docker compose
-else
-	DOCKER_COMPOSE_COMMAND = docker-compose
-endif
+DOCKER_COMPOSE_COMMAND = docker compose
 
 SERVICE_NAME = app
-CONTAINER_NAME = cybulde-template-container
+CONTAINER_NAME = cybulde-data-container
 
 DIRS_TO_VALIDATE = cybulde
 DOCKER_COMPOSE_RUN = $(DOCKER_COMPOSE_COMMAND) run --rm $(SERVICE_NAME)
@@ -21,13 +17,17 @@ DOCKER_COMPOSE_EXEC = $(DOCKER_COMPOSE_COMMAND) exec $(SERVICE_NAME)
 
 export
 
-# Returns true if the stem is a non-empty environment variable, or else raises an error.
-guard-%:
-	@#$(or ${$*}, $(error $* is not set))
+## Starts docker containers using "docker-compose up -d"
+up:
+	$(DOCKER_COMPOSE_COMMAND) up -d
 
-## Call entrypoint
-entrypoint: up
-	$(DOCKER_COMPOSE_EXEC) python ./cybulde/entrypoint.py
+## docker-compose down
+down:
+	$(DOCKER_COMPOSE_COMMAND) down
+
+## Call version-data
+version-data: up
+	$(DOCKER_COMPOSE_EXEC) python ./cybulde/version-data.py
 
 ## Starts jupyter lab
 notebook: up
@@ -81,35 +81,16 @@ build-for-dependencies:
 lock-dependencies: build-for-dependencies
 	$(DOCKER_COMPOSE_RUN) bash -c "if [ -e /home/$(USER_NAME)/poetry.lock.build ]; then cp /home/$(USER_NAME)/poetry.lock.build ./poetry.lock; else poetry lock; fi"
 
-## Starts docker containers using "docker-compose up -d"
-up:
-	$(DOCKER_COMPOSE_COMMAND) up -d
-
-## docker-compose down
-down:
-	$(DOCKER_COMPOSE_COMMAND) down
-
 ## Open an interactive shell in docker container
 exec-in: up
 	docker exec -it $(CONTAINER_NAME) bash
 
 .DEFAULT_GOAL := help
 
-# Inspired by <http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html>
-# sed script explained:
-# /^##/:
-# 	* save line in hold space
-# 	* purge line
-# 	* Loop:
-# 		* append newline + line to hold space
-# 		* go to next line
-# 		* if line starts with doc comment, strip comment character off and loop
-# 	* remove target prerequisites
-# 	* append hold space (+ newline) to line
-# 	* replace newline plus comments by `---`
-# 	* print line
-# Separate expressions are necessary because labels cannot be delimited by
-# semicolon; see <http://stackoverflow.com/a/11799865/1968>
+# The target below is copied from <http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html>
+# You saw in the targets above that we have comments using "##" for each target. This is on purpose because
+# ... with the help of the target below, when we run the command "make", Make will list all of the available
+# ... targets, along with the comment that we have made using "##".
 .PHONY: help
 help:
 	@echo "$$(tput bold)Available rules:$$(tput sgr0)"

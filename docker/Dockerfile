@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bullseye
+FROM python:3.14.7-bookworm
 
 ARG USER_ID
 ARG USER_NAME
@@ -7,7 +7,7 @@ ENV HOME=/home/${USER_NAME} \
 ENV \
   PYTHONUNBUFFERED=1 \
   DEBIAN_FRONTEND=noninteractive \
-  TZ=Europe/Warsaw \
+  TZ=Europe/London \
   PATH="/usr/local/gcloud/google-cloud-sdk/bin:${HOME}/.local/bin:${VIRTUAL_ENV}/bin:${PATH}" \
   PYTHONPATH="/app:${PYTHONPATH}" \
   BUILD_POETRY_LOCK="${HOME}/poetry.lock.build"
@@ -17,6 +17,7 @@ RUN apt-get -qq update \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -qq -y clean
 
+# Install gsutil and gcloud sdk (this is copied from https://cloud.google.com/sdk/docs/downloads-apt-get)
 RUN curl https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-426.0.0-linux-x86_64.tar.gz > /tmp/google-cloud-sdk.tar.gz
 RUN mkdir -p /usr/local/gcloud \
     && tar -C /usr/local/gcloud -xf /tmp/google-cloud-sdk.tar.gz \
@@ -28,7 +29,8 @@ RUN addgroup --system --gid ${USER_ID} ${USER_NAME} \
 RUN chown -R ${USER_NAME}:${USER_NAME} ${HOME}
 RUN mkdir -p /app && chown -R ${USER_NAME}:${USER_NAME} /app /tmp
 
-RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.7.1
+# Install Poetry (this is copied from https://python-poetry.org/docs/#installation)
+RUN curl -sSL https://install.python-poetry.org | python3 - --version 2.4.1
 
 USER ${USER_NAME}
 
@@ -36,9 +38,9 @@ COPY pyproject.toml *.lock /app/
 WORKDIR /app
 
 RUN poetry config virtualenvs.create false \
-    && python3.10 -m venv ${VIRTUAL_ENV} \
+    && python3.14 -m venv ${VIRTUAL_ENV} \
     && pip install --upgrade pip setuptools \
-    && poetry install && cp poetry.lock ${BUILD_POETRY_LOCK} \
+    && poetry install --no-root && cp poetry.lock ${BUILD_POETRY_LOCK} \
     && rm -rf ${HOME}/.cache/*
 
 USER root
