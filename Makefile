@@ -27,7 +27,7 @@ down:
 
 ## Call version-data
 version-data: up
-	$(DOCKER_COMPOSE_EXEC) python ./cybulde/version-data.py
+	$(DOCKER_COMPOSE_EXEC) python ./cybulde/version_data.py
 
 ## Starts jupyter lab
 notebook: up

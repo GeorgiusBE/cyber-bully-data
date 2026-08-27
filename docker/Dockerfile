@@ -1,4 +1,4 @@
-FROM python:3.14.7-bookworm
+FROM python:3.13-bookworm
 
 ARG USER_ID
 ARG USER_NAME
@@ -38,7 +38,7 @@ COPY pyproject.toml *.lock /app/
 WORKDIR /app
 
 RUN poetry config virtualenvs.create false \
-    && python3.14 -m venv ${VIRTUAL_ENV} \
+    && python3.13 -m venv ${VIRTUAL_ENV} \
     && pip install --upgrade pip setuptools \
     && poetry install --no-root && cp poetry.lock ${BUILD_POETRY_LOCK} \
     && rm -rf ${HOME}/.cache/*
@@ -47,6 +47,9 @@ USER root
 COPY ./docker/scripts/* /
 RUN chown -R ${USER_NAME} /*.sh && chmod +x /*.sh
 USER ${USER_NAME}
+
+RUN git config --global user.name "Georgius Benedikt Ermanta" \
+    && git config --global user.email "georgiusbenedikt09@gmail.com"
 
 COPY . /app/
 CMD ["/startup-script.sh"]
